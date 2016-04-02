@@ -1,0 +1,24 @@
+{
+  "name": "hain-plugin-notes",
+  "version": "0.0.1",
+  "description": "Simple plugin for taking notes.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jervant/hain-plugin-notes.git"
+  },
+  "keywords": [
+    "hain0"
+  ],
+  "author": "Jervant Malakjan",
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "^4.6.1",
+    "jsonfile": "^2.2.3"
+  },
+  "hain": {
+    "prefix": "/note ",
+    "usage": "/note note",
+    "icon": "#fa fa-sticky-note"
+  }
+}
