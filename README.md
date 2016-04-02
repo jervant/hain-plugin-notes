@@ -11,5 +11,5 @@ Open Hain and type
 
 # Usage
 ```
-/n something
+/note something
 ```
