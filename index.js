@@ -35,7 +35,6 @@
         function prepareOutput(data, payload = 'show', desc = 'Note') {
             output = [];
             _.forEach(data, function (note, index) {
-                logger.log(index);
 
                 var id = (payload === 'show') ? note.text : note.id;
 
