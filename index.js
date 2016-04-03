@@ -2,7 +2,12 @@
     'use strict';
 
     const _ = require('lodash');
-    const storage = require('jsonfile');
+    const fs = require('fs');
+    const uuid = require('uuid');
+
+    const low = require('lowdb');
+    const storage = require('lowdb/file-sync');
+    const db = low(__dirname + '/db.json', {storage});
 
     const options = require('./package.json').hain;
 
@@ -11,25 +16,71 @@
         const toast = context.toast;
         const app = context.app;
 
-        const file = 'notes.json';
         var notes = [];
         var output = [];
 
         function startup() {
-            notes = storage.readFileSync(getFilePath());
+            db._.mixin({
+                last: function(array) {
+                    return _.last(array);
+                },
+                like: function(array, value, attribute) {
+                    return _.filter(array, function (item) {
+
+                        if(item[attribute]){
+                            logger.log(item);
+                            logger.log(item[attribute]);
+                            logger.log(value);
+                            return item[attribute].indexOf(value) >= 0;
+                        }
+
+                        return false;
+                    })
+                }
+            });
+
+            fetchData();
         }
 
-        function getFilePath() {
-            return __dirname + '/' + file;
-        }
+        function migrate(version) {
 
-        function randString(x){
-            var s = "";
-            while(s.length<x&&x>0){
-                var r = Math.random();
-                s+= (r<0.1?Math.floor(r*100):String.fromCharCode(Math.floor(r*26) + (r>0.5?97:65)));
+            var migration = db('migrations').last();
+
+            if (!migration || migration.version !== version) {
+                var legacyStore = __dirname + '/notes.json';
+
+                fs.stat(legacyStore, function (err, stat) {
+                    if (err === null) {
+
+                        var legacyNotes = require('./notes.json');
+                        _.each(legacyNotes, function (note) {
+                            createNote(note.text);
+                        });
+
+                        db('migrations').push({ version : version});
+
+                        fs.unlink(legacyStore, (err) => {
+                            if (err) throw err;
+                        });
+
+                    } else if (err.code == 'ENOENT') {
+
+                    } else {
+                        logger.log(err);
+                    }
+                });
             }
-            return s;
+        }
+
+        function fetchData() {
+            try {
+                notes = db('notes').value();
+
+                migrate('0.0.1');
+
+            } catch (err) {
+                logger.log(err);
+            }
         }
 
         function prepareOutput(data, payload = 'show', desc = 'Note') {
@@ -51,15 +102,13 @@
 
         function findNote(string) {
             var results = {
-                found : [],
-                new : false
+                found: [],
+                new: false
             };
 
-            results.found =  _.filter(notes, function(note) {
-                return note.text.indexOf(string) >= 0;
-            });
+            results.found = db('notes').like(string, 'text');
 
-            if(!_.find(notes, function(note) { return note.text === string })){
+            if (!db('notes').find({text : string})) {
                 results.new = string;
             }
 
@@ -67,36 +116,26 @@
         }
 
         function createNote(note) {
-            notes.unshift({
-                id : randString(32),
-                text : note,
-            });
-
-            storage.writeFile(getFilePath(), notes, {}, function (err) {
-                if (err) {
-                    logger.log(err);
-                    toast.enqueue('Error saving note!', 5000);
-                } else {
-                    app.setInput(options.prefix);
-                    toast.enqueue('Note saved!', 2500);
-                }
-            })
+            try {
+                db('notes').push({ id : uuid(), text: note })
+                app.setInput(options.prefix);
+                toast.enqueue('Note saved!', 2500);
+            } catch (err) {
+                logger.log(err);
+                toast.enqueue('Error saving note!', 5000);
+            }
         }
 
         function deleteNote(id) {
-            _.remove(notes, function(note) {
-                return note.id === id;
-            });
 
-            storage.writeFile(getFilePath(), notes, {}, function (err) {
-                if (err) {
-                    logger.log(err);
-                    toast.enqueue('Error deleting note!', 5000);
-                } else {
-                    app.setInput(options.prefix);
-                    toast.enqueue('Note deleted!', 2500);
-                }
-            })
+            try {
+                db('notes').remove({ id: id })
+                app.setInput(options.prefix);
+                toast.enqueue('Note deleted!', 2500);
+            } catch (err) {
+                logger.log(err);
+                toast.enqueue('Error deleting note!', 5000);
+            }
         }
 
         function search(query, res) {
@@ -104,12 +143,12 @@
             const query_trim = query.trim();
 
             if (query_trim.length === 0) {
-                if(notes.length){
+                if (notes.length) {
                     prepareOutput(notes);
-                }else{
+                } else {
                     prepareOutput([{
-                        id : null,
-                        text : 'You don\'t have any notes. To create a note just type something end press Enter.'
+                        id: null,
+                        text: 'You don\'t have any notes. To create a note just type something end press Enter.'
                     }], 'info', 'Info');
                 }
 
@@ -118,14 +157,14 @@
 
             var result = findNote(query_trim);
 
-            if(result.found.length || result.new.length){
+            if (result.found.length || result.new.length) {
                 output = [];
 
-                if(result.found.length){
+                if (result.found.length) {
                     prepareOutput(result.found, 'delete', 'Delete');
                 }
 
-                if(result.new){
+                if (result.new) {
                     output.unshift(
                         {
                             id: result.new,
@@ -135,7 +174,7 @@
                         }
                     );
                 }
-            }else{
+            } else {
                 output = [
                     {
                         id: query_trim,
@@ -150,8 +189,7 @@
         }
 
         function execute(id, payload) {
-
-            switch (payload){
+            switch (payload) {
                 case 'create':
                     createNote(id);
                     break;
