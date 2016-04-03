@@ -1,6 +1,6 @@
 {
   "name": "hain-plugin-notes",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Simple plugin for taking notes.",
   "main": "index.js",
   "repository": {
@@ -14,7 +14,8 @@
   "license": "MIT",
   "dependencies": {
     "lodash": "^4.6.1",
-    "jsonfile": "^2.2.3"
+    "lowdb": "^0.12.5",
+    "uuid": "^2.0.1"
   },
   "hain": {
     "prefix": "/note ",
