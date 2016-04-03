@@ -1,6 +1,6 @@
 {
   "name": "hain-plugin-notes",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Simple plugin for taking notes.",
   "main": "index.js",
   "repository": {
