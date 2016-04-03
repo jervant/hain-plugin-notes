@@ -28,9 +28,6 @@
                     return _.filter(array, function (item) {
 
                         if(item[attribute]){
-                            logger.log(item);
-                            logger.log(item[attribute]);
-                            logger.log(value);
                             return item[attribute].indexOf(value) >= 0;
                         }
 
