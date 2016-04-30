@@ -145,7 +145,7 @@
                 } else {
                     prepareOutput([{
                         id: null,
-                        text: 'You don\'t have any notes. To create a note just type something end press Enter.'
+                        text: 'You don\'t have any notes. To create a note just type something and press Enter.'
                     }], 'info', 'Info');
                 }
 
